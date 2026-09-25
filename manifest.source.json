@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "local.basispoints.transport",
+  "name": "BasisPoints Transport",
+  "version": "0.2.1",
+  "description": "BasisPoints Responses transport with request shaping and bidirectional run_officejs client-tool bridge for Sub4API OpenAI OAuth.",
+  "author": "Local build",
+  "requires": {
+    "sub2api": ">=1.1.4 <1.2.0",
+    "recommended_sub2api_version": "1.1.4",
+    "tested_sub2api_versions": [
+      "1.1.4"
+    ],
+    "plugin_protocol": 1,
+    "transport_api": 1,
+    "ui_bridge": 1
+  },
+  "capabilities": [
+    {
+      "id": "openai.oauth.outbound_transport.v1",
+      "platform": "openai",
+      "account_type": "oauth"
+    }
+  ],
+  "runtimes": {},
+  "ui": {
+    "entrypoint": "ui/index.html"
+  },
+  "files": {}
+}

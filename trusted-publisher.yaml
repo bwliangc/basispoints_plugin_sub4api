@@ -1,0 +1,4 @@
+plugins:
+  allow_unsigned: false
+  trusted_publishers:
+    basispoints-local-v1: "TBbYTyomVQzNEPzmTqZM/Ui24fc96EKH9hcOUl0Evk4="
