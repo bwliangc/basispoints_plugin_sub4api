@@ -32,7 +32,7 @@ echo "  GOPATH=$GOPATH"
 echo "  GOMODCACHE=$GOMODCACHE"
 echo
 
-command -v go >/dev/null || { echo "错误：未找到 Go。需要 Go 1.23+。"; exit 1; }
+command -v go >/dev/null || { echo "错误：未找到 Go。需要 Go 1.24+。"; exit 1; }
 command -v curl >/dev/null || { echo "错误：未找到 curl。"; exit 1; }
 command -v openssl >/dev/null || { echo "错误：未找到 openssl。"; exit 1; }
 command -v python3 >/dev/null || { echo "错误：未找到 python3。"; exit 1; }
@@ -100,7 +100,7 @@ echo "========================================"
 echo "完成"
 echo "========================================"
 echo "插件包:"
-echo "  dist/basispoints-transport-0.2.1.s2plugin"
+echo "  dist/basispoints-transport-0.2.2.s2plugin"
 echo
 echo "Sub4API 信任公钥配置:"
 echo "  dist/trusted-publisher.yaml"

@@ -1,0 +1,5 @@
+.build-state/
+/build/
+/dist/
+/pkg/pluginapi/v1/
+/.publisher-key.pem

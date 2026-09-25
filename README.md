@@ -1,16 +1,29 @@
-# BasisPoints Transport plugin for Sub4API 1.1.4 — v0.2.1
-用法，修改Sub4API 的config.ymal,最后添加
-plugins:  
-data_dir: /app/data/plugins  
-allow_unsigned: false  
-trusted_publishers:    
-basispoints-local-v1: "构建出来的公钥"
+# BasisPoints Transport plugin for Sub4API 1.1.4 — v0.2.2
+用法：将本次构建生成的 `dist/trusted-publisher.yaml` 中的公钥合并到 Sub4API 的 `config.yaml`：
 
-如果用我编译好的，值是这个：basispoints-local-v1: "TBbYTyomVQzNEPzmTqZM/Ui24fc96EKH9hcOUl0Evk4="
+```yaml
+plugins:
+  data_dir: /app/data/plugins
+  allow_unsigned: false
+  trusted_publishers:
+    basispoints-local-v1: "本次构建出来的公钥"
+```
 
 自己编译的话就自己找，在生成的dist目录下有trusted-publisher.yaml。
 
-然后在插件中心安装basispoints-transport-0.2.1.s2plugin 这个插件即可。
+然后在插件中心安装basispoints-transport-0.2.2.s2plugin 这个插件即可。
+
+## v0.2.2 指定账号路由
+
+在插件配置页的「指定账号 ID」中填写需要走 BasisPoints 的 **Sub4API 数字账号 ID**，每行一个，也支持逗号或空格分隔。这里不是 ChatGPT 账号 ID、邮箱、用户 ID 或 API Key。
+
+只有「启用路由 + 账号 ID 在列表中 + 模型匹配」同时满足时，插件才转换请求并转发到 BasisPoints。其他请求保留原 URL、请求头、请求体并通过原上游转发。
+
+- 账号筛选使用宿主协议的 `ForwardRequestStart.account_id`，不从请求头推断。
+- 列表为空、旧配置缺少 `account_ids` 或请求没有有效账号 ID 时，全部走原上游。
+- **从 v0.2.1 升级后需要先填写账号 ID 并保存，才会恢复指定账号的 BasisPoints 路由。**
+- JSON 配置字段示例：`"account_ids": [12, 34]`。ID 必须是 1 到 9007199254740991 的整数，重复项会自动合并。
+- 这只改变插件收到请求后的路由，不改变 Sub4API 的账号调度或插件挂载范围。
 
 ## v0.2.1 修复
 
@@ -41,6 +54,7 @@ basispoints-local-v1: "构建出来的公钥"
 - endpoint: `https://bps.openai.com/basispoints/api/responses`
 - models: `gpt-6-astra`, `gpt-5.6-sol`
 - auth mode: `chatgpt`
+- 指定账号: `[]`（默认不转发任何账号到 BasisPoints）
 - 工具兼容: `auto`（推荐）
 
 > BasisPoints 是未公开文档化的内部 endpoint，行为可能变化。插件不会记录 access token、账号 ID、prompt 或工具输出正文。
@@ -65,6 +79,8 @@ PUBLISHER_KEY_FILE=/旧版目录/.publisher-key.pem ./build.sh
 如果不保留旧私钥，`build.sh` 会生成新的 Ed25519 密钥，这时必须把新的 `dist/trusted-publisher.yaml` 公钥更新进 Sub4API 配置并重启宿主。
 
 ## 构建
+
+需要 Go 1.24+（当前依赖要求）、Python 3、curl 和支持 Ed25519 的 OpenSSL。
 
 ```bash
 chmod +x build.sh

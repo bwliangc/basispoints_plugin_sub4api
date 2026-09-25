@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "local.basispoints.transport",
   "name": "BasisPoints Transport",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "BasisPoints Responses transport with request shaping and bidirectional run_officejs client-tool bridge for Sub4API OpenAI OAuth.",
   "author": "Local build",
   "requires": {

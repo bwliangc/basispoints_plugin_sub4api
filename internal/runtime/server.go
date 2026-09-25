@@ -26,7 +26,7 @@ import (
 
 const (
 	pluginID        = "local.basispoints.transport"
-	pluginVersion   = "0.2.1"
+	pluginVersion   = "0.2.2"
 	transportName   = "run_officejs"
 	transportAlias  = "functions.run_officejs"
 	defaultEndpoint = "https://bps.openai.com/basispoints/api/responses"
@@ -36,6 +36,7 @@ type Config struct {
 	Enabled         bool     `json:"enabled"`
 	Endpoint        string   `json:"endpoint"`
 	Models          []string `json:"models"`
+	AccountIDs      []int64  `json:"account_ids"`
 	AuthMode        string   `json:"auth_mode"`
 	CopyAccountID   bool     `json:"copy_account_id"`
 	ToolBridgeMode  string   `json:"tool_bridge_mode"`
@@ -47,6 +48,7 @@ func DefaultConfig() Config {
 		Enabled:         true,
 		Endpoint:        defaultEndpoint,
 		Models:          []string{"gpt-6-astra", "gpt-5.6-sol"},
+		AccountIDs:      []int64{},
 		AuthMode:        "chatgpt",
 		CopyAccountID:   true,
 		ToolBridgeMode:  "auto",
@@ -104,6 +106,7 @@ func (s *Server) Health(context.Context, *pluginv1.HealthRequest) (*pluginv1.Hea
 		"enabled":          cfg.Enabled,
 		"endpoint":         cfg.Endpoint,
 		"models":           cfg.Models,
+		"account_count":    len(cfg.AccountIDs),
 		"tool_bridge_mode": cfg.ToolBridgeMode,
 		"version":          pluginVersion,
 	})
@@ -150,6 +153,18 @@ func normalizeConfig(raw []byte) (Config, error) {
 		models = append(models, m)
 	}
 	cfg.Models = models
+	seenAccounts := make(map[int64]bool)
+	accountIDs := make([]int64, 0, len(cfg.AccountIDs))
+	for _, id := range cfg.AccountIDs {
+		if id <= 0 || id > 9007199254740991 {
+			return Config{}, errors.New("account_ids must contain positive integers no greater than 9007199254740991")
+		}
+		if !seenAccounts[id] {
+			seenAccounts[id] = true
+			accountIDs = append(accountIDs, id)
+		}
+	}
+	cfg.AccountIDs = accountIDs
 	return cfg, nil
 }
 
@@ -180,6 +195,9 @@ func (s *Server) TestConfig(_ context.Context, _ *pluginv1.TestConfigRequest) (*
 	s.mu.RUnlock()
 	if !cfg.Enabled {
 		return &pluginv1.TestConfigResponse{Success: true, Message: "plugin routing disabled; pure passthrough mode"}, nil
+	}
+	if len(cfg.AccountIDs) == 0 {
+		return &pluginv1.TestConfigResponse{Success: true, Message: "no accounts selected; all requests use the original upstream"}, nil
 	}
 	return &pluginv1.TestConfigResponse{Success: true, Message: "configuration valid; no upstream request was sent"}, nil
 }
@@ -218,7 +236,7 @@ func (s *Server) Forward(stream pluginv1.TransportPlugin_ForwardServer) error {
 	s.mu.RUnlock()
 
 	model := modelFromJSON(original.Bytes())
-	useBPS := cfg.Enabled && modelAllowed(model, cfg.Models)
+	useBPS := cfg.Enabled && accountAllowed(start.GetAccountId(), cfg.AccountIDs) && modelAllowed(model, cfg.Models)
 	if !useBPS {
 		return s.forwardRaw(stream, start, original.Bytes(), cfg.RequestTimeoutS, started)
 	}
@@ -1168,6 +1186,20 @@ func firstModel(models []string) string {
 		return "gpt-6-astra"
 	}
 	return models[0]
+}
+
+// Match the host's Sub4API account ID, never a client-supplied HTTP header.
+// An empty allowlist (including configs from older versions) routes no accounts.
+func accountAllowed(accountID int64, accountIDs []int64) bool {
+	if accountID <= 0 {
+		return false
+	}
+	for _, id := range accountIDs {
+		if id == accountID {
+			return true
+		}
+	}
+	return false
 }
 
 func modelAllowed(model string, models []string) bool {
